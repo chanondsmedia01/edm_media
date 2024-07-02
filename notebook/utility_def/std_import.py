@@ -16,7 +16,7 @@ from json import dumps
 import sys
 import os
 
-sys.path.append(os.path.abspath("/Workspace/Repos/thanakrit.boonquarmdee@lotuss.com/edm_util"))
+sys.path.append("../")
 spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
 
 spark.conf.set("spark.sql.execution.arrow.enabled", "true")
