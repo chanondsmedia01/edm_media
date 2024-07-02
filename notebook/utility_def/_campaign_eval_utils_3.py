@@ -1948,17 +1948,17 @@ def kpi_noctrl_allprod(txn
 
     ## check store format
 
-    if store_format == "":
+    if store_fmt == "":
         print("Not define store format, will use HDE as default")
-        store_format = "HDE"
+        store_fmt = "HDE"
     # end if
 
     txn_pre_cond = """ ({0} == 'pre') and 
-                       ( upper(store_format_group) == upper({1}) )
+                       ( upper(store_format_group) == upper('{1}') )
                    """.format(period_col, store_fmt)
 
     txn_dur_cond = """ ({0} == 'cmp') and 
-                       ( upper(store_format_group) == upper({1}) )
+                       ( upper(store_format_group) == upper('{1}') )
                    """.format(period_col, store_fmt)
     
     kpis = [(F.countDistinct('date_id')/7).alias('n_weeks'),
@@ -1985,21 +1985,23 @@ def kpi_noctrl_allprod(txn
      .unionByName(txn_test_cmp, allowMissingColumns=True)
      .withColumn('carded_nonCarded', F.when(F.col('household_id').isNotNull(), 'MyLo').otherwise('nonMyLo'))
     )
-    
-    # allprod_kpi       = txn_test_combine.groupBy('period_fis_wk',"mech_name")\
-    #                                     .pivot('carded_nonCarded')\
-    #                                     .agg(*kpis)\
-    #                                     .withColumn('kpi_level', F.lit('all_prod'))
-    
-    # prod_kpi_final    = allprod_kpi.fillna(0)
 
-    allprod_kpi_allmech  = txn_test_combine.groupBy(period_col)\
-                                           .pivot('carded_nonCarded')\
-                                           .agg(*kpis)\
-                                           .withColumn('kpi_level', F.lit('all_prod_lotuss'))\
-                                           .withColumn('mech_name', F.lit('NonSpecific'))\
-                                           .withColumn('store_format'), F.lit(uppper(store_fmt))
-                             
+    if period_col == 'period_fis_wk' : 
+        allprod_kpi_allmech  = txn_test_combine.groupBy('period_fis_wk').alias('period_col')\
+                                               .pivot('carded_nonCarded')\
+                                               .agg(*kpis)\
+                                               .withColumn('kpi_level', F.lit('all_prod_lotuss'))\
+                                               .withColumn('mech_name', F.lit('NonSpecific'))\
+                                               .withColumn('store_format'), F.lit(uppper(store_fmt))
+    else:
+        allprod_kpi_allmech  = txn_test_combine.groupBy('period_promo_wk')\
+                                               .pivot('carded_nonCarded')\
+                                               .agg(*kpis)\
+                                               .withColumn('kpi_level', F.lit('all_prod_lotuss'))\
+                                               .withColumn('mech_name', F.lit('NonSpecific'))\
+                                               .withColumn('store_format'), F.lit(uppper(store_fmt))     
+    ## end if
+                        
     prod_kpi_final       = allprod_kpi_allmech.fillna(0)
     
     kpi_df               = to_pandas(prod_kpi_final)
