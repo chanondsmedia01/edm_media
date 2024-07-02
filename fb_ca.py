@@ -201,7 +201,7 @@ fraction = {'Most Price Driven':0.05, 'Most Price Insensitive':0.05, 'Price Driv
             'Price Insensitive':0.05, 'Price Neutral':0.05, 'No TruPrice segment data':0.05}
 
 def statify_2_step(sf, macro_group_col_name, startum_col_name, fraction_dict):
-    spark.sparkContext.setCheckpointDir('dbfs:/FileStore/thanakrit/temp/checkpoint')
+    # spark.sparkContext.setCheckpointDir('dbfs:/FileStore/thanakrit/temp/checkpoint')
 
     macro_group_list = sf.select(F.col(macro_group_col_name)).drop_duplicates().toPandas()[macro_group_col_name].to_list()
 
@@ -263,7 +263,7 @@ target_spec = [
 def limit_gr_rank(sf, spec):
     """
     """
-    spark.sparkContext.setCheckpointDir('dbfs:/FileStore/thanakrit/temp/checkpoint')
+    # spark.sparkContext.setCheckpointDir('dbfs:/FileStore/thanakrit/temp/checkpoint')
     limited_sf = spark.createDataFrame([], sf.schema)
 
     for s in spec:
