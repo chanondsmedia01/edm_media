@@ -165,12 +165,12 @@ lyt_desc = spark.createDataFrame(
 )
 F.broadcast(lyt_desc)
 
-life_cyc_lv2_desc = spark.read.csv(
-    "dbfs:/mnt/pvtdmbobazc01/edminput/filestore/user/thanawat_asa/lifecycle_segmentation_prod/lifecycle_detailed_name_def.csv",
-    header=True,
-    inferSchema=True,
-)
-F.broadcast(life_cyc_lv2_desc)
+# life_cyc_lv2_desc = spark.read.csv(
+#     "dbfs:/mnt/pvtdmbobazc01/edminput/filestore/user/thanawat_asa/lifecycle_segmentation_prod/lifecycle_detailed_name_def.csv",
+#     header=True,
+#     inferSchema=True,
+# )
+# F.broadcast(life_cyc_lv2_desc)
 
 # COMMAND ----------
 
