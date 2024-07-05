@@ -17,8 +17,7 @@ from utils.DBPath import DBPath
 from utils.campaign_config import CampaignEval
 from utils import period_cal
 
-sys.path.append(os.path.abspath(
-    "/Workspace/Repos/thanakrit.boonquarmdee@lotuss.com/edm_util"))
+sys.path.append("../")
 from edm_class import txnItem
 
 def load_txn(cmp,

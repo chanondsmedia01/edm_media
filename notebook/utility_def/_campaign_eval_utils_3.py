@@ -41,7 +41,7 @@ import pathlib
 
 # COMMAND ----------
 
-# MAGIC %run /Workspace/Repos/thanakrit.boonquarmdee@lotuss.com/edm_media/notebook/utility_def/edm_utils
+# MAGIC %run /Workspace/Repos/niti.buesamae@lotuss.com/edm_media_test/notebook/utility_def/edm_utils
 
 # COMMAND ----------
 
@@ -957,7 +957,7 @@ def get_sales_mkt_growth_per_mech(
 
     if store_format == "":
         print("Not define store format, will use HDE as default")
-        store_format = "HDE"
+        store_format = "hde"
     # end if
 
     # Select week period column name
@@ -1478,22 +1478,22 @@ def cust_kpi_noctrl_fiswk_dev(txn
     if len(test_store_sf.select("mech_name").dropDuplicates().collect()) > 1:
       trg_str_df   = test_store_sf.select('store_id',"mech_name").dropDuplicates().groupBy("store_id").agg(F.concat_ws("_", F.collect_list("mech_name")).alias("mech_name")).dropDuplicates().persist()
       
-      txn_test_pre = txn_all.filter(txn_all.period_fis_wk.isin(['pre']))\
+      txn_test_pre = txn.filter(txn.period_fis_wk.isin(['pre']))\
                             .join  (trg_str_df , 'store_id', 'inner')\
                             .withColumn("ALL", F.lit("ALL_Mech"))\
                             .dropDuplicates()
                             
-      txn_test_cmp = txn_all.filter(txn_all.period_fis_wk.isin(['cmp']))\
+      txn_test_cmp = txn.filter(txn.period_fis_wk.isin(['cmp']))\
                             .join(trg_str_df, 'store_id', 'inner')\
                             .withColumn("ALL", F.lit("ALL_Mech"))\
                             .dropDuplicates()
     else:
       trg_str_df   = test_store_sf.select('store_id',"mech_name").dropDuplicates().persist()
-      txn_test_pre = txn_all.filter(txn_all.period_fis_wk.isin(['pre']))\
+      txn_test_pre = txn.filter(txn.period_fis_wk.isin(['pre']))\
                             .join  (trg_str_df , 'store_id', 'inner')\
                             .dropDuplicates()
                             
-      txn_test_cmp = txn_all.filter(txn_all.period_fis_wk.isin(['cmp']))\
+      txn_test_cmp = txn.filter(txn.period_fis_wk.isin(['cmp']))\
                             .join(trg_str_df, 'store_id', 'inner')\
                             .dropDuplicates()
 
@@ -1522,9 +1522,16 @@ def cust_kpi_noctrl_fiswk_dev(txn
                                        .agg(*kpis)\
                                        .withColumn('kpi_level', F.lit('feature_category'))
     
-    combined_kpi_final = sku_kpi.unionByName(brand_in_cate_kpi, allowMissingColumns = True)\
-                                .unionByName(all_category_kpi, allowMissingColumns = True)\
+    all_lotus_kpi = txn_test_combine.groupBy('period_fis_wk',"mech_name")\
+                                       .pivot('carded_nonCarded')\
+                                       .agg(*kpis)\
+                                       .withColumn('kpi_level', F.lit('feature_lotus'))
+    
+    combined_kpi_final = sku_kpi.unionByName(brand_in_cate_kpi, allowMissingColumns=True)\
+                                .unionByName(all_category_kpi, allowMissingColumns=True)\
+                                .unionByName(all_lotus_kpi, allowMissingColumns=True)\
                                 .fillna(0)
+
     kpi_df = to_pandas(combined_kpi_final) 
     
     if len(test_store_sf.select("mech_name").dropDuplicates().collect()) > 1:
@@ -1550,9 +1557,18 @@ def cust_kpi_noctrl_fiswk_dev(txn
                                         .withColumn('kpi_level', F.lit('feature_category'))\
                                         .withColumn('mech_name', F.lit('ALL_Mech'))
       
-      combined_kpi_all = sku_kpi_all.unionByName(brand_in_cate_kpi_all, allowMissingColumns = True)\
-                                    .unionByName(all_category_kpi_all, allowMissingColumns = True)\
+      all_lotus_kpi_all = txn_test_combine\
+                                        .groupBy('period_fis_wk')\
+                                        .pivot('carded_nonCarded')\
+                                        .agg(*kpis)\
+                                        .withColumn('kpi_level', F.lit('feature_lotus'))\
+                                        .withColumn('mech_name', F.lit('ALL_Mech'))
+      
+      combined_kpi_all = sku_kpi_all.unionByName(brand_in_cate_kpi_all, allowMissingColumns=True)\
+                                    .unionByName(all_category_kpi_all, allowMissingColumns=True)\
+                                    .unionByName(all_lotus_kpi_all, allowMissingColumns=True)\
                                     .fillna(0)
+
       kpi_df = to_pandas(combined_kpi_final.unionByName(combined_kpi_all, allowMissingColumns = True))
     
     df_pv = kpi_df[['period_fis_wk', 'kpi_level', 'MyLo_customer','mech_name']]\
@@ -1624,22 +1640,22 @@ def cust_kpi_noctrl_fiswk_dev_eql(txn
     if len(test_store_sf.select("mech_name").dropDuplicates().collect()) > 1:
       trg_str_df   = test_store_sf.select('store_id',"mech_name").dropDuplicates().groupBy("store_id").agg(F.concat_ws("_", F.collect_list("mech_name")).alias("mech_name")).dropDuplicates().persist()
       
-      txn_test_pre = txn_all.filter(txn_all.period_eq_fis_wk.isin(['pre']))\
+      txn_test_pre = txn.filter(txn.period_eq_fis_wk.isin(['pre']))\
                             .join  (trg_str_df , 'store_id', 'inner')\
                             .withColumn("ALL", F.lit("ALL_Mech"))\
                             .dropDuplicates()
                             
-      txn_test_cmp = txn_all.filter(txn_all.period_eq_fis_wk.isin(['cmp']))\
+      txn_test_cmp = txn.filter(txn.period_eq_fis_wk.isin(['cmp']))\
                             .join(trg_str_df, 'store_id', 'inner')\
                             .withColumn("ALL", F.lit("ALL_Mech"))\
                             .dropDuplicates()
     else:
       trg_str_df   = test_store_sf.select('store_id',"mech_name").dropDuplicates().persist()
-      txn_test_pre = txn_all.filter(txn_all.period_eq_fis_wk.isin(['pre']))\
+      txn_test_pre = txn.filter(txn.period_eq_fis_wk.isin(['pre']))\
                             .join  (trg_str_df , 'store_id', 'inner')\
                             .dropDuplicates()
                             
-      txn_test_cmp = txn_all.filter(txn_all.period_eq_fis_wk.isin(['cmp']))\
+      txn_test_cmp = txn.filter(txn.period_eq_fis_wk.isin(['cmp']))\
                             .join(trg_str_df, 'store_id', 'inner')\
                         .dropDuplicates()
 
@@ -1703,7 +1719,7 @@ def cust_kpi_noctrl_fiswk_dev_eql(txn
                                         .withColumn('kpi_level', F.lit('feature_category'))\
                                         .withColumn('mech_name', F.lit('ALL_Mech'))
       
-      all_lotus_kpi_all = txn_test_combine.join(features_category, 'upc_id', 'left_semi')\
+      all_lotus_kpi_all = txn_test_combine\
                                         .groupBy('period_eq_fis_wk')\
                                         .pivot('carded_nonCarded')\
                                         .agg(*kpis)\
@@ -1785,22 +1801,22 @@ def cust_kpi_noctrl_pm_dev_eql(txn
     if len(test_store_sf.select("mech_name").dropDuplicates().collect()) > 1:
       trg_str_df   = test_store_sf.select('store_id',"mech_name").dropDuplicates().groupBy("store_id").agg(F.concat_ws("_", F.collect_list("mech_name")).alias("mech_name")).dropDuplicates().persist()
       
-      txn_test_pre = txn_all.filter(txn_all.period_eq_promo_wk.isin(['pre']))\
+      txn_test_pre = txn.filter(txn.period_eq_promo_wk.isin(['pre']))\
                             .join  (trg_str_df , 'store_id', 'inner')\
                             .withColumn("ALL", F.lit("ALL_Mech"))\
                             .dropDuplicates()
                             
-      txn_test_cmp = txn_all.filter(txn_all.period_eq_promo_wk.isin(['cmp']))\
+      txn_test_cmp = txn.filter(txn.period_eq_promo_wk.isin(['cmp']))\
                             .join(trg_str_df, 'store_id', 'inner')\
                             .withColumn("ALL", F.lit("ALL_Mech"))\
                             .dropDuplicates()
     else:
       trg_str_df   = test_store_sf.select('store_id',"mech_name").dropDuplicates().persist()
-      txn_test_pre = txn_all.filter(txn_all.period_eq_promo_wk.isin(['pre']))\
+      txn_test_pre = txn.filter(txn.period_eq_promo_wk.isin(['pre']))\
                             .join  (trg_str_df , 'store_id', 'inner')\
                             .dropDuplicates()
                             
-      txn_test_cmp = txn_all.filter(txn_all.period_eq_promo_wk.isin(['cmp']))\
+      txn_test_cmp = txn.filter(txn.period_eq_promo_wk.isin(['cmp']))\
                             .join(trg_str_df, 'store_id', 'inner')\
                             .dropDuplicates()
 
@@ -1892,6 +1908,105 @@ def cust_kpi_noctrl_pm_dev_eql(txn
     cust_share_pd = df_pv.T.reset_index()
     
     return combined_kpi_final, kpi_df, cust_share_pd
+
+# COMMAND ----------
+
+### Pat adhoc Dev Jul 2024 All lotus product level, normal pre/cmp period
+def kpi_noctrl_allprod(txn
+                      ,store_fmt
+                      ,week_type
+                      ):
+    """Promo-eval : customer KPIs Pre-Dur for test storevel)
+    - Week period
+    - Return 
+      >> combined_kpi : spark dataframe with all combine KPI
+      >> kpi_df : combined_kpi in pandas      
+    """ 
+
+    #test_store_sf:pyspark.sql.dataframe.DataFrame
+    #store_id:integer
+    #c_start:date
+    #c_end:date
+    #mech_count:integer
+    #mech_name:string
+    #media_fee_psto:double
+    #aisle_subclass:string
+    #aisle_scope:string
+    
+    # Select week period column name
+    if week_type == "fis_wk":
+        period_col = "period_fis_wk"
+        week_col = "week_id"
+    elif week_type == "promo_wk":
+        period_col = "period_promo_wk"
+        week_col = "promoweek_id"
+    else:
+        print("In correct week_type, Will use fis_week as default value \n")
+        period_col = "period_fis_wk"
+        week_col = "week_id"
+    # filter txn for category (class) level and brand level
+
+    ## check store format
+
+    if store_fmt == "":
+        print("Not define store format, will use HDE as default")
+        store_fmt = "HDE"
+    # end if
+
+    txn_pre_cond = """ ({0} == 'pre') and 
+                       ( upper(store_format_group) == upper('{1}') )
+                   """.format(period_col, store_fmt)
+
+    txn_dur_cond = """ ({0} == 'cmp') and 
+                       ( upper(store_format_group) == upper('{1}') )
+                   """.format(period_col, store_fmt)
+    
+    kpis = [(F.countDistinct('date_id')/7).alias('n_weeks'),
+            F.sum('net_spend_amt').alias('sales'),
+            F.sum('pkg_weight_unit').alias('units'),
+            F.countDistinct('transaction_uid').alias('visits'),
+            F.countDistinct('household_id').alias('customer'),
+           (F.sum('net_spend_amt')/F.countDistinct('household_id')).alias('spc'),
+           (F.sum('net_spend_amt')/F.countDistinct('transaction_uid')).alias('spv'),
+           (F.countDistinct('transaction_uid')/F.countDistinct('household_id')).alias('vpc'),
+           (F.sum('pkg_weight_unit')/F.countDistinct('transaction_uid')).alias('upv'),
+           (F.sum('net_spend_amt')/F.sum('pkg_weight_unit')).alias('ppu')]
+    
+    txn_test_pre = txn_all.where( txn_pre_cond )\
+                          .withColumn("ALL", F.lit("ALL_Mech"))\
+                          .dropDuplicates()
+                            
+    txn_test_cmp = txn_all.where(txn_dur_cond )\
+                          .withColumn("ALL", F.lit("ALL_Mech"))\
+                          .dropDuplicates()
+        
+    txn_test_combine = \
+    (txn_test_pre
+     .unionByName(txn_test_cmp, allowMissingColumns=True)
+     .withColumn('carded_nonCarded', F.when(F.col('household_id').isNotNull(), 'MyLo').otherwise('nonMyLo'))
+    )
+
+    if period_col == 'period_fis_wk' : 
+        allprod_kpi_allmech  = txn_test_combine.groupBy('period_fis_wk').alias('period_col')\
+                                               .pivot('carded_nonCarded')\
+                                               .agg(*kpis)\
+                                               .withColumn('kpi_level', F.lit('all_prod_lotuss'))\
+                                               .withColumn('mech_name', F.lit('NonSpecific'))\
+                                               .withColumn('store_format'), F.lit(uppper(store_fmt))
+    else:
+        allprod_kpi_allmech  = txn_test_combine.groupBy('period_promo_wk')\
+                                               .pivot('carded_nonCarded')\
+                                               .agg(*kpis)\
+                                               .withColumn('kpi_level', F.lit('all_prod_lotuss'))\
+                                               .withColumn('mech_name', F.lit('NonSpecific'))\
+                                               .withColumn('store_format'), F.lit(uppper(store_fmt))     
+    ## end if
+                        
+    prod_kpi_final       = allprod_kpi_allmech.fillna(0)
+    
+    kpi_df               = to_pandas(prod_kpi_final)
+    
+    return prod_kpi_final, kpi_df
 
 # COMMAND ----------
 
